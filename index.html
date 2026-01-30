@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Alifvia</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #050505; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        #info {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #guide {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+            transition: opacity 1s;
+            pointer-events: none;
+            text-shadow: 0 0 10px cyan;
+            z-index: 20;
+        }
+        #music-control {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            z-index: 20;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: none;
+        }
+        canvas { display: block; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <audio id="bgMusic" loop>
+        <source src="audio/ophelia.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="music-control">Music: ON 🔊</div>
+
+    <div id="guide">
+        <h2>KLIK UNTUK MEMULAI</h2>
+        <p>Pakai Headset & Klik Layar 🎧</p>
+    </div>
+    
+    <div id="info">Created for Alifvia Okta Nur Rahmadani</div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- KONFIGURASI USER ---
+        
+        // 1. MUSIK (Pastikan file mp3 ada di folder yang sama)
+        // Cek tag <audio> di atas untuk mengganti nama file.
+
+        // 2. TEKS
+        const TEXT_LOVE = "I LOVE YOU";
+        const TEXT_NAME = "Alifvia Okta\nNur Rahmadani"; 
+
+        // Warna & Partikel
+        const PARTICLE_COUNT = 25000;
+        const PARTICLE_SIZE = 0.15;
+        const COLOR_SPHERE = new THREE.Color(0x00ffff); // Cyan
+        const COLOR_HEART = new THREE.Color(0xff0066);  // Pink
+        const COLOR_TEXT = new THREE.Color(0xffffff);   // Putih
+        const COLOR_SATURN = new THREE.Color(0xffcc00); // Emas
+
+        // --- SETUP SCENE ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 35;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 1.0;
+        controls.enableZoom = false;
+
+        // --- PARTICLES SYSTEM ---
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(PARTICLE_COUNT * 3);
+        const targetPositions = new Float32Array(PARTICLE_COUNT * 3);
+        const colors = new Float32Array(PARTICLE_COUNT * 3);
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            const coords = getSphereCoords();
+            positions[i * 3] = coords.x;
+            positions[i * 3 + 1] = coords.y;
+            positions[i * 3 + 2] = coords.z;
+            targetPositions[i * 3] = coords.x;
+            targetPositions[i * 3 + 1] = coords.y;
+            targetPositions[i * 3 + 2] = coords.z;
+            colors[i * 3] = COLOR_SPHERE.r;
+            colors[i * 3 + 1] = COLOR_SPHERE.g;
+            colors[i * 3 + 2] = COLOR_SPHERE.b;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: PARTICLE_SIZE,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        // --- BENTUK (SHAPE LOGIC) ---
+        function getSphereCoords() {
+            const r = 12 + Math.random() * 3;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            return { x: r * Math.sin(phi) * Math.cos(theta), y: r * Math.sin(phi) * Math.sin(theta), z: r * Math.cos(phi) };
+        }
+
+        function getHeartCoords() {
+            const t = Math.random() * Math.PI * 2;
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+            const z = (Math.random() - 0.5) * 5; 
+            return { x: x, y: y, z: z }; // Skala normal (1.0) karena tidak ada foto
+        }
+
+        function getSaturnCoords(index) {
+            if (index % 10 < 6) {
+                const r = 9; 
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos((Math.random() * 2) - 1);
+                return { x: r * Math.sin(phi) * Math.cos(theta), y: r * Math.sin(phi) * Math.sin(theta), z: r * Math.cos(phi) };
+            } else {
+                const innerR = 12; const outerR = 22;
+                const r = innerR + Math.random() * (outerR - innerR);
+                const theta = Math.random() * Math.PI * 2;
+                return { x: r * Math.cos(theta), y: (Math.random() - 0.5) * 0.5, z: r * Math.sin(theta) };
+            }
+        }
+
+        function createTextCoordinates(textString) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const width = 800; const height = 400;
+            canvas.width = width; canvas.height = height;
+
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            
+            const fontSize = textString.length > 15 ? 80 : 150; 
+            ctx.font = `bold ${fontSize}px Arial`;
+
+            const lines = textString.split('\n');
+            const lineHeight = fontSize * 1.2;
+            const startY = (height - (lines.length - 1) * lineHeight) / 2;
+
+            lines.forEach((line, i) => { ctx.fillText(line, width / 2, startY + (i * lineHeight)); });
+
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+            const coords = [];
+
+            for (let y = 0; y < height; y += 4) { 
+                for (let x = 0; x < width; x += 4) {
+                    const index = (y * width + x) * 4;
+                    if (data[index] > 128) { 
+                        coords.push({ x: (x - width / 2) * 0.08, y: -(y - height / 2) * 0.08, z: (Math.random() - 0.5) * 2 });
+                    }
+                }
+            }
+            return coords;
+        }
+
+        const coordsLove = createTextCoordinates(TEXT_LOVE);
+        const coordsName = createTextCoordinates(TEXT_NAME);
+
+        function getRandomTextCoord(coordArray) {
+            if (coordArray.length === 0) return { x: 0, y: 0, z: 0 };
+            return coordArray[Math.floor(Math.random() * coordArray.length)];
+        }
+
+        // --- INTERACTION ---
+        let mode = 0; 
+        const MODES_TOTAL = 5;
+        let isExploded = false;
+        let audioStarted = false;
+        
+        let currentColor = new THREE.Color().copy(COLOR_SPHERE);
+        let targetColor = new THREE.Color().copy(COLOR_SPHERE);
+
+        const musicControl = document.getElementById('music-control');
+        const bgMusic = document.getElementById('bgMusic');
+        
+        musicControl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (bgMusic.paused) {
+                bgMusic.play(); musicControl.innerHTML = "Music: ON 🔊";
+            } else {
+                bgMusic.pause(); musicControl.innerHTML = "Music: OFF 🔇";
+            }
+        });
+
+        window.addEventListener('click', () => {
+            // Audio Start
+            if (!audioStarted) {
+                bgMusic.volume = 0.5;
+                bgMusic.play().then(() => {
+                    audioStarted = true;
+                    musicControl.style.display = 'block';
+                }).catch(e => console.log("Audio play failed:", e));
+            }
+
+            // Explode Reset
+            if (isExploded) {
+                isExploded = false;
+                applyModeShape();
+                return;
+            }
+
+            // Change Mode
+            mode = (mode + 1) % MODES_TOTAL;
+            applyModeShape();
+
+            const guide = document.getElementById('guide');
+            if(guide.style.opacity !== '0') guide.style.opacity = '0';
+        });
+
+        window.addEventListener('dblclick', () => {
+            isExploded = true;
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                targetPositions[i * 3] = (Math.random() - 0.5) * 200;
+                targetPositions[i * 3 + 1] = (Math.random() - 0.5) * 200;
+                targetPositions[i * 3 + 2] = (Math.random() - 0.5) * 200;
+            }
+        });
+
+        function applyModeShape() {
+            controls.autoRotateSpeed = 1.0;
+            switch(mode) {
+                case 0: // Sphere
+                    targetColor.copy(COLOR_SPHERE); 
+                    for (let i = 0; i < PARTICLE_COUNT; i++) {
+                        const c = getSphereCoords();
+                        targetPositions[i*3] = c.x; targetPositions[i*3+1] = c.y; targetPositions[i*3+2] = c.z;
+                    }
+                    break;
+                case 1: // Heart (Tanpa Foto)
+                    targetColor.copy(COLOR_HEART); controls.autoRotateSpeed = 2.0;
+                    for (let i = 0; i < PARTICLE_COUNT; i++) {
+                        const c = getHeartCoords();
+                        targetPositions[i*3] = c.x; targetPositions[i*3+1] = c.y; targetPositions[i*3+2] = c.z;
+                    }
+                    break;
+                case 2: // Text Love
+                    targetColor.copy(COLOR_TEXT); 
+                    for (let i = 0; i < PARTICLE_COUNT; i++) {
+                        const c = getRandomTextCoord(coordsLove);
+                        targetPositions[i*3] = c.x; targetPositions[i*3+1] = c.y; targetPositions[i*3+2] = c.z;
+                    }
+                    break;
+                case 3: // Text Name
+                    targetColor.copy(COLOR_HEART); 
+                    for (let i = 0; i < PARTICLE_COUNT; i++) {
+                        const c = getRandomTextCoord(coordsName);
+                        targetPositions[i*3] = c.x; targetPositions[i*3+1] = c.y; targetPositions[i*3+2] = c.z;
+                    }
+                    break;
+                case 4: // Saturn
+                    targetColor.copy(COLOR_SATURN); 
+                    for (let i = 0; i < PARTICLE_COUNT; i++) {
+                        const c = getSaturnCoords(i);
+                        const tilt = 0.4;
+                        const y = c.y * Math.cos(tilt) - c.z * Math.sin(tilt);
+                        const z = c.y * Math.sin(tilt) + c.z * Math.cos(tilt);
+                        targetPositions[i*3] = c.x; targetPositions[i*3+1] = y; targetPositions[i*3+2] = z;
+                    }
+                    break;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            currentColor.lerp(targetColor, 0.05);
+
+            const positionsArray = particles.geometry.attributes.position.array;
+            const colorsArray = particles.geometry.attributes.color.array;
+
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                const ix = i * 3; const iy = i * 3 + 1; const iz = i * 3 + 2;
+                const speed = (mode === 2 || mode === 3) ? 0.15 : 0.08;
+                
+                positionsArray[ix] += (targetPositions[ix] - positionsArray[ix]) * speed;
+                positionsArray[iy] += (targetPositions[iy] - positionsArray[iy]) * speed;
+                positionsArray[iz] += (targetPositions[iz] - positionsArray[iz]) * speed;
+                
+                if (mode !== 2 && mode !== 3 && !isExploded) {
+                    positionsArray[ix] += (Math.random() - 0.5) * 0.03;
+                    positionsArray[iy] += (Math.random() - 0.5) * 0.03;
+                    positionsArray[iz] += (Math.random() - 0.5) * 0.03;
+                }
+                colorsArray[ix] = currentColor.r; colorsArray[iy] = currentColor.g; colorsArray[iz] = currentColor.b;
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+            particles.geometry.attributes.color.needsUpdate = true;
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        animate();
+    </script>
+</body>
+</html>
